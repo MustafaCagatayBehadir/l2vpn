@@ -1,0 +1,50 @@
+module l2vpn {
+
+  yang-version 1.1;
+  namespace "https://www.turktelekom.com.trl2vpn";
+  prefix l2vpn;
+
+  import ietf-inet-types {
+    prefix inet;
+  }
+  import tailf-common {
+    prefix tailf;
+  }
+  import tailf-ncs {
+    prefix ncs;
+  }
+
+  description
+    "L2VPN provision package.";
+
+  revision 2023-11-20 {
+    description
+      "Initial revision.";
+  }
+
+  typedef l2vpn-string {
+    type string {
+      pattern
+        '[^\s]+' {
+        error-message
+          "No space/s allowed.";
+      }
+    }
+  }
+
+  container l2vpn {
+    tailf:info "L2VPN Service Definitions";
+
+    list elan {
+      tailf:info "Ethernet LAN (E-LAN). Provides a multipoint-to-multipoint EVC.";
+
+      uses ncs:service-data;
+      ncs:servicepoint elan-servicepoint;
+
+      leaf name {
+        tailf:info "[Source ID (3 CHAR FIX)]-[Service Name (3-5 CHAR CAP)]-[Service Name Addition (3-5 CHAR CAP)]-[Path (01-02)]";
+        type l2vpn-string;
+      }
+    }
+  }
+}
