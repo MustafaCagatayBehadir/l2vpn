@@ -1,7 +1,7 @@
 module l2vpn {
 
   yang-version 1.1;
-  namespace "https://www.turktelekom.com.trl2vpn";
+  namespace "https://www.turktelekom.com.tr/l2vpn";
   prefix l2vpn;
 
   import ietf-inet-types {
@@ -32,6 +32,110 @@ module l2vpn {
     }
   }
 
+  typedef pw-id-type {
+    type uint32;
+  }
+
+  typedef mtu-type {
+    type uint16 {
+      range "64..65535";
+    }
+  }
+
+  typedef uni-type {
+    type enumeration {
+      enum port;
+      enum serv-inst;
+    }
+  }
+
+  typedef encapsulation-type {
+    type enumeration {
+      enum dot1q-2tags;
+      enum dot1q;
+      enum dot1ad;
+      enum e-default;
+      enum untagged;
+    }
+  }
+
+  typedef vlan-id-type {
+    type uint16 {
+      range "2..4094";
+    }
+    description
+      "The VLAN-ID that uniquely identifies a VLAN.  This is the 12-bit
+       VLAN-ID used in the VLAN Tag header.";
+    reference
+      "[802.1Q]";
+  }
+
+  grouping elan {
+    leaf pw-id {
+      tailf:info "Pseudowire Id";
+      type pw-id-type;
+      mandatory true;
+    }
+
+    leaf mtu {
+      tailf:info "Interface/service MTU";
+      type mtu-type;
+      default 1514;
+    }
+
+    list endpoint {
+      tailf:info "Device that is attached to CE.";
+
+      key "device";
+
+      leaf device {
+        tailf:info "PE Device";
+        type leafref {
+          path "/ncs:devices/ncs:device/ncs:name";
+        }
+      }
+
+      list pe-interface {
+        tailf:info "PE Device Interface";
+
+        key "name";
+
+        leaf name {
+          tailf:info "Interface Size.Ex GigabitEthernet | TenGigabitEthernet | FortyGigE | HundredGigE | Port-channel";
+          type string;
+        }
+
+        leaf interface-description {
+          tailf:info "Interface Description";
+          type l2vpn-string;
+        }
+
+        leaf end-type {
+          type uni-type;
+          default serv-inst;
+        }
+
+        leaf encapsulation {
+          tailf:info "Interface Encapsulation Type";
+          type encapsulation-type;
+          default "dot1q";
+        }
+
+        leaf s-vlan-id {
+          when "../encapsulation = 'dot1ad' or ../encapsulation = 'dot1q-2tags'";
+          tailf:info "Interface Encapsulation S-Vlan Id";
+          type vlan-id-type;
+        }
+
+        leaf-list c-vlan-id {
+          when "../encapsulation = 'dot1q-2tags' or ../encapsulation = 'dot1ad' or ../encapsulation = 'dot1q'";
+          tailf:info "Interface Encapsulation C-Vlan Id";
+          type vlan-id-type;
+        }
+      }
+    }
+  }
+
   container l2vpn {
     tailf:info "L2VPN Service Definitions";
 
@@ -40,6 +144,8 @@ module l2vpn {
 
       uses ncs:service-data;
       ncs:servicepoint elan-servicepoint;
+
+      key name;
 
       leaf name {
         tailf:info "[Source ID (3 CHAR FIX)]-[Service Name (3-5 CHAR CAP)]-[Service Name Addition (3-5 CHAR CAP)]-[Path (01-02)]";
