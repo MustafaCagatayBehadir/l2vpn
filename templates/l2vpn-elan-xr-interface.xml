@@ -1,0 +1,51 @@
+<config-template xmlns="http://tail-f.com/ns/config/1.0">
+  <devices xmlns="http://tail-f.com/ns/ncs">
+    <?foreach {endpoint}?>
+        <device>
+            <name>{device}</name>
+            <config>
+                <?foreach {pe-interface}?>
+                    <interface xmlns="http://tail-f.com/ned/cisco-ios-xr">
+                        <?if {if-size='Bundle-Ether'}?>
+                            <Bundle-Ether-subinterface>
+                                <Bundle-Ether>
+                                    <id>{if-number}.{subif-id}</id>
+                                    <?expand xr-subinterface-macro?>
+                                </Bundle-Ether>
+                            </Bundle-Ether-subinterface>
+                        <?elif {if-size='GigabitEthernet'}?><!--if {if-size='Bundle-Ether'}-->
+                            <GigabitEthernet-subinterface>
+                                <GigabitEthernet>
+                                    <id>{if-number}.{subif-id}</id>
+                                    <?expand xr-subinterface-macro?>
+                                </GigabitEthernet>
+                            </GigabitEthernet-subinterface>
+                        <?elif {if-size='TenGigE'}?><!--if {if-size='Bundle-Ether'}-->
+                            <TenGigE-subinterface>
+                                <TenGigE>
+                                    <id>{if-number}.{subif-id}</id>
+                                    <?expand xr-subinterface-macro?>
+                                </TenGigE>
+                            </TenGigE-subinterface>
+                        <?elif {if-size='FortyGigE'}?><!--if {if-size='Bundle-Ether'}-->
+                            <FortyGigE-subinterface>
+                                <FortyGigE>
+                                    <id>{if-number}.{subif-id}</id>
+                                    <?expand xr-subinterface-macro?>
+                                </FortyGigE>
+                            </FortyGigE-subinterface>
+                        <?else?><!--if {if-size='Bundle-Ether'}-->
+                            <HundredGigE-subinterface>
+                                <HundredGigE>
+                                    <id>{if-number}.{subif-id}</id>
+                                    <?expand xr-subinterface-macro?>
+                                </HundredGigE>
+                            </HundredGigE-subinterface>
+                        <?end?><!--if {if-size='Bundle-Ether'}-->
+                    </interface>
+                <?end?><!--foreach {pe-interface}-->
+            </config>
+        </device>
+    <?end?><!--foreach {endpoint}-->
+  </devices>
+</config-template>

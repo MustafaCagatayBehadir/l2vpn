@@ -1,0 +1,102 @@
+<config-template xmlns="http://tail-f.com/ns/config/1.0">
+    <!-- xr-subinterface-macro -->
+    <?macro xr-subinterface-macro?>
+        <mode>l2transport</mode>
+        <description when="{description}">[ELAN]::[{../../name}]::[{description}]::[NSO-CONFIG-ONLY]</description>
+        <description when="{not(description)}">[{../../name}]::[ELAN]::[]::[NSO-CONFIG-ONLY]</description>
+        <mtu>{../../mtu}</mtu>
+        <shutdown tags="delete"/>
+        <encapsulation>
+            <dot1ad when="{encapsulation='dot1ad'}">
+                <vlan-id>{s-vlan-id}</vlan-id>
+                <dot1q>{c-vlan-id}</dot1q>
+            </dot1ad>
+            <dot1q when="{encapsulation='dot1q'}">
+                <vlan-id >{c-vlan-id}</vlan-id>
+            </dot1q>
+            <dot1q when="{encapsulation='dot1q-2tags'}">
+                <vlan-id>{s-vlan-id}</vlan-id>
+                <second-dot1q>{c-vlan-id}</second-dot1q>
+            </dot1q>
+            <default when="{encapsulation='e-default'}"/>
+            <untagged when="{encapsulation='untagged'}"/>
+        </encapsulation>
+        <rewrite when="{encapsulation='dot1q' or encapsulation='dot1q-2tags' }">
+            <ingress>
+                <tag>
+                    <pop when="{encapsulation='dot1q'}">1</pop>
+                    <pop when="{encapsulation='dot1q-2tags'}">2</pop>
+                    <mode>symmetric</mode>
+                </tag>
+            </ingress>
+        </rewrite>
+    <?endmacro?>
+    <!-- xr-subinterface-macro -->
+
+    <!-- xr-l2vpn-pw-class-macro -->
+    <?macro xr-l2vpn-pw-class-macro?>
+        <pw-class>
+            <name>{$SERVICE_NAME}</name>
+            <encapsulation>
+                <mpls>
+                    <control-word/>
+                </mpls>
+            </encapsulation>
+        </pw-class>
+    <?endmacro?>
+    <!-- xr-l2vpn-pw-class-macro -->
+
+    <!-- xr-l2vpn-vfi-neighbor-macro -->
+    <?macro xr-l2vpn-vfi-neighbor-macro?>
+        <?set DEVICE_NAME={device}?>
+        <?set TUNNEL_DESTINATION_IP={/device[name=$DEVICE_NAME]/config/cisco-ios-xr:interface/Loopback[id='1']/ipv4/address/ip}?>
+        <vfi>
+            <name>{$SERVICE_NAME}</name>
+            <neighbor>
+                <address>{$TUNNEL_DESTINATION_IP}</address>
+                <pw-id>{$PW_ID}</pw-id>
+                <pw-class>{$SERVICE_NAME}</pw-class>
+            </neighbor>
+        </vfi>
+    <?endmacro?>
+    <!-- xr-l2vpn-vfi-neighbor-macro -->
+
+    <!-- xr-l2vpn-bridge-domain-macro -->
+    <?macro xr-l2vpn-bridge-domain-macro?>
+        <l2vpn xmlns="http://tail-f.com/ned/cisco-ios-xr">
+            <?expand xr-l2vpn-pw-class-macro?>
+            <bridge>
+                <group>
+                    <group-name>{$SERVICE_NAME}</group-name>
+                    <bridge-domain>
+                        <bridge-domain-name>{$SERVICE_NAME}</bridge-domain-name>
+                        <mtu>{$MTU}</mtu>
+                        <?foreach {pe-interface}?>
+                            <?if {end-type='serv-inst'}?>
+                                <transport-mode>
+                                    <vlan>
+                                        <passthrough/>
+                                    </vlan>
+                                </transport-mode>                            
+                            <?end?><!--if {../end-type='serv-inst'}-->
+                            <interface>
+                                <name>{if-size}{if-number}.{subif-id}</name>
+                                <?if {../../split-horizon='enable'}?>
+                                    <split-horizon>
+                                        <group/>
+                                    </split-horizon>
+                                <?end?><!--if {../../split-horizon='enable'}-->
+                            </interface>                        
+                        <?end?><!--foreach {pe-interface}-->
+                        <?foreach {../endpoint}?>
+                            <?if {not(device=$DEVICE)}?>
+                                <?expand xr-l2vpn-vfi-neighbor-macro?>
+                            <?end?><!--if {not(device=$DEVICE)}-->
+                        <?end?><!--foreach {../endpoint}-->
+                    </bridge-domain>
+                </group>
+            </bridge>
+        </l2vpn>
+    <?endmacro?>
+    <!-- xr-l2vpn-bridge-domain-macro -->
+</config-template>

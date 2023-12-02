@@ -13,6 +13,9 @@ module l2vpn {
   import tailf-ncs {
     prefix ncs;
   }
+  import service-inventory {
+    prefix s-i;
+  }
 
   description
     "L2VPN provision package.";
@@ -42,10 +45,23 @@ module l2vpn {
     }
   }
 
+  typedef state-type {
+    type enumeration {
+      enum enable;
+      enum disable;
+    }
+  }
+
   typedef uni-type {
     type enumeration {
       enum port;
       enum serv-inst;
+    }
+  }
+
+  typedef subif-id-type {
+    type uint16 {
+      range "2..4094";
     }
   }
 
@@ -70,7 +86,13 @@ module l2vpn {
       "[802.1Q]";
   }
 
-  grouping elan {
+  typedef elan-index-type {
+    type uint8 {
+      range "1..24";
+    }
+  }
+
+  grouping elan-grouping {
     leaf pw-id {
       tailf:info "Pseudowire Id";
       type pw-id-type;
@@ -81,6 +103,12 @@ module l2vpn {
       tailf:info "Interface/service MTU";
       type mtu-type;
       default 1514;
+    }
+
+    leaf split-horizon {
+      tailf:info "When enable, split horizon will be added for AC in same bridge-domain";
+      type state-type;
+      default enable;
     }
 
     list endpoint {
@@ -98,11 +126,25 @@ module l2vpn {
       list pe-interface {
         tailf:info "PE Device Interface";
 
-        key "name";
+        key "id-int";
 
-        leaf name {
+        leaf id-int {
+          tailf:info "Just a number used as index";
+          type elan-index-type;
+        }
+
+        leaf if-size {
           tailf:info "Interface Size.Ex GigabitEthernet | TenGigabitEthernet | FortyGigE | HundredGigE | Port-channel";
-          type string;
+          type leafref {
+            path "/s-i:service-inventory-manager/s-i:devices/s-i:device[s-i:name=current()/../../device]/s-i:interface/s-i:if-size";
+          }
+        }
+
+        leaf if-number {
+          tailf:info "Interface Size.Ex GigabitEthernet | TenGigabitEthernet | FortyGigE | HundredGigE | Port-channel";
+          type leafref {
+            path "/s-i:service-inventory-manager/s-i:devices/s-i:device[s-i:name=current()/../../device]/s-i:interface/s-i:if-number";
+          }
         }
 
         leaf interface-description {
@@ -115,7 +157,14 @@ module l2vpn {
           default serv-inst;
         }
 
+        leaf subif-id {
+          when "../end-type = 'serv-inst'";
+          tailf:info "Sub-Interface Id";
+          type subif-id-type;
+        }
+
         leaf encapsulation {
+          when "../end-type = 'serv-inst'";
           tailf:info "Interface Encapsulation Type";
           type encapsulation-type;
           default "dot1q";
@@ -140,7 +189,7 @@ module l2vpn {
     tailf:info "L2VPN Service Definitions";
 
     list elan {
-      tailf:info "Ethernet LAN (E-LAN). Provides a multipoint-to-multipoint EVC.";
+      tailf:info "Ethernet LAN (E-LAN). Provides a Multipoint-to-Multipoint EVC.";
 
       uses ncs:service-data;
       ncs:servicepoint elan-servicepoint;
@@ -148,9 +197,11 @@ module l2vpn {
       key name;
 
       leaf name {
-        tailf:info "[Source ID (3 CHAR FIX)]-[Service Name (3-5 CHAR CAP)]-[Service Name Addition (3-5 CHAR CAP)]-[Path (01-02)]";
+        tailf:info "ELAN Service Name";
         type l2vpn-string;
       }
+
+      uses l2vpn:elan-grouping;
     }
   }
 }

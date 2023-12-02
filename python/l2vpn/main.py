@@ -13,6 +13,17 @@ class ElanServiceCallback(Service):
     def cb_create(self, tctx, root, service, proplist):
         """Service create callback."""
         self.log.info("Service create(service=", getattr(service, "_path"), ")")
+        template = ncs.template.Template(service)
+        tvars = ncs.template.Variables()
+        tvars.add("SERVICE_NAME", service.name)
+        tvars.add("PW_ID", service.pw_id)
+        tvars.add("MTU", service.mtu)
+        self.log.info("Template l2vpn-elan-xr-interface is started to apply.")
+        template.apply("l2vpn-elan-xr-interface", tvars)
+        self.log.info("Template l2vpn-elan-xr-interface is applied.")
+        self.log.info("Template l2vpn-elan-xr-bridge-domain is started to apply.")
+        template.apply("l2vpn-elan-xr-bridge-domain", tvars)
+        self.log.info("Template l2vpn-elan-xr-bridge-domain is applied.")
 
 
 # ---------------------------------------------
