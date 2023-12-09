@@ -1,0 +1,69 @@
+<config-template xmlns="http://tail-f.com/ns/config/1.0">
+    <!-- vrp-subinterface-macro -->
+    <?macro vrp-subinterface-macro?>
+        <description when="{description}">[ELAN]::[{../../name}]::[{description}]::[NSO-CONFIG-ONLY]</description>
+        <description when="{not(description)}">[{../../name}]::[ELAN]::[]::[NSO-CONFIG-ONLY]</description>
+        <l2>
+            <binding>
+              <vsi>{../../name}</vsi>
+            </binding>
+        </l2>
+        <mtu>{../../mtu}</mtu>
+        <shutdown>false</shutdown>
+        <statistic>
+            <enable />
+        </statistic>
+        <?if {enacpsulation='dot1q'}?>
+            <vlan-type>
+                <dot1q>{c-vlan-id}</dot1q>
+            </vlan-type>            
+        <?else?><!--if {enacpsulation='dot1q'}-->
+            <encapsulation>
+                <qinq-termination/>
+            </encapsulation>
+            <qinq>
+                <termination>
+                    <pe-vid>
+                        <id>{s-vlan-id}</id>
+                        <ce-vid>
+                            <id>{c-vlan-id}</id>
+                        </ce-vid>
+                    </pe-vid>
+                </termination>
+            </qinq>
+        <?end?><!--if {enacpsulation='dot1q'}-->
+    <?endmacro?>
+    <!-- vrp-subinterface-macro -->
+
+    <!-- vrp-l2vpn-vfi-neighbor-macro -->
+    <?macro vrp-l2vpn-neighbor-macro?>
+        <?set DEVICE_NAME={device}?>
+        <?set TUNNEL_DESTINATION_IP={/device[name=$DEVICE_NAME]/config/cisco-ios-xr:interface/Loopback[id='1']/ipv4/address/ip}?>
+        <?if {/device[name=$DEVICE_NAME]/platform/name='huawei-vrp'}?>
+            <?set TUNNEL_DESTINATION_IP={/device[name=$DEVICE_NAME]/config/vrp:interface/LoopBack[name='1']/ip/address/primary/ip/address}?>
+        <?end?><!--if {expression}-->
+        <peer>
+            <address>{$TUNNEL_DESTINATION_IP}</address>
+            <encapsulation>ethernet</encapsulation>
+        </peer>
+    <?endmacro?>
+    <!-- vrp-l2vpn-vfi-neighbor-macro -->
+
+    <!-- vrp-l2vpn-bridge-domain-macro -->
+    <?macro vrp-l2vpn-bridge-domain-macro?>
+        <vsi xmlns="http://tail-f.com/ned/huawei-vrp">
+            <name>{$SERVICE_NAME}</name>
+            <pwsignal>
+                <ldp>
+                    <vsi-id>{$PW_ID}</vsi-id>
+                    <?foreach {../endpoint}?>
+                        <?if {not(device=$DEVICE)}?>
+                            <?expand vrp-l2vpn-neighbor-macro?>
+                        <?end?><!--if {not(device=$DEVICE)}-->
+                    <?end?><!--foreach {../endpoint}-->    
+                </ldp>
+            </pwsignal>
+            <mtu>{$MTU}</mtu>
+        </vsi>
+    <?endmacro?>
+</config-template>

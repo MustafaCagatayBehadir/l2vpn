@@ -18,12 +18,14 @@ class ElanServiceCallback(Service):
         tvars.add("SERVICE_NAME", service.name)
         tvars.add("PW_ID", service.pw_id)
         tvars.add("MTU", service.mtu)
-        self.log.info("Template l2vpn-elan-xr-interface is started to apply.")
+        self.log.info("Template l2vpn-elan-xr|vrp-interface is started to apply.")
         template.apply("l2vpn-elan-xr-interface", tvars)
-        self.log.info("Template l2vpn-elan-xr-interface is applied.")
-        self.log.info("Template l2vpn-elan-xr-bridge-domain is started to apply.")
+        template.apply("l2vpn-elan-vrp-interface", tvars)
+        self.log.info("Template l2vpn-elan-xr|vrp-interface is applied.")
+        self.log.info("Template l2vpn-elan-xr|vrp-bridge-domain is started to apply.")
         template.apply("l2vpn-elan-xr-bridge-domain", tvars)
-        self.log.info("Template l2vpn-elan-xr-bridge-domain is applied.")
+        template.apply("l2vpn-elan-vrp-bridge-domain", tvars)
+        self.log.info("Template l2vpn-elan-xr|vrp-bridge-domain is applied.")
 
 
 # ---------------------------------------------
