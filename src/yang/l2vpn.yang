@@ -135,14 +135,16 @@ module l2vpn {
 
         leaf if-size {
           tailf:info "Interface Size.Ex GigabitEthernet | TenGigabitEthernet | FortyGigE | HundredGigE | Port-channel";
-          type leafref {
+          type string;
+          tailf:non-strict-leafref {
             path "/s-i:service-inventory-manager/s-i:devices/s-i:device[s-i:name=current()/../../device]/s-i:interface/s-i:if-size";
           }
         }
 
         leaf if-number {
           tailf:info "Interface Size.Ex GigabitEthernet | TenGigabitEthernet | FortyGigE | HundredGigE | Port-channel";
-          type leafref {
+          type string;
+          tailf:non-strict-leafref {
             path "/s-i:service-inventory-manager/s-i:devices/s-i:device[s-i:name=current()/../../device]/s-i:interface/s-i:if-number";
           }
         }
