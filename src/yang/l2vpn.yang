@@ -39,10 +39,18 @@ module l2vpn {
     type uint32;
   }
 
+  typedef service-id-type {
+    type uint32;
+  }
+
   typedef mtu-type {
     type uint16 {
       range "64..65535";
     }
+  }
+
+  typedef sdp-id-type {
+    type uint32;
   }
 
   typedef state-type {
@@ -95,8 +103,20 @@ module l2vpn {
   grouping elan-grouping {
     leaf pw-id {
       tailf:info "Pseudowire Id";
+      config false;
+      tailf:cdb-oper {
+        tailf:persistent true;
+      }
       type pw-id-type;
-      mandatory true;
+    }
+
+    leaf service-id {
+      tailf:info "Service Id";
+      config false;
+      tailf:cdb-oper {
+        tailf:persistent true;
+      }
+      type service-id-type;
     }
 
     leaf service-description {
@@ -128,6 +148,31 @@ module l2vpn {
         }
       }
 
+      list remote-peer {
+        tailf:info "Remote peer information";
+        config false;
+        tailf:cdb-oper {
+          tailf:persistent true;
+        }
+
+        key name;
+
+        leaf name {
+          tailf:info "Remote peer name";
+          type string;
+        }
+
+        leaf sdp-id {
+          tailf:info "Service sdp id assigned by resource-manager";
+          type sdp-id-type;
+        }
+
+        leaf address {
+          tailf:info "MPLS system ip address.";
+          type inet:ipv4-address;
+        }
+      }
+
       list pe-interface {
         tailf:info "PE Device Interface";
 
@@ -136,6 +181,15 @@ module l2vpn {
         leaf id-int {
           tailf:info "Just a number used as index";
           type elan-index-type;
+        }
+
+        leaf subif-id {
+          tailf:info "Sub-Interface Id";
+          config false;
+          tailf:cdb-oper {
+            tailf:persistent true;
+          }
+          type subif-id-type;
         }
 
         leaf if-size {
@@ -161,12 +215,6 @@ module l2vpn {
         leaf end-type {
           type uni-type;
           default serv-inst;
-        }
-
-        leaf subif-id {
-          when "../end-type = 'serv-inst'";
-          tailf:info "Sub-Interface Id";
-          type subif-id-type;
         }
 
         leaf encapsulation {
