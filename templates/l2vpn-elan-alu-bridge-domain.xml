@@ -1,0 +1,13 @@
+<config-template xmlns="http://tail-f.com/ns/config/1.0">
+    <devices xmlns="http://tail-f.com/ns/ncs">
+        <?foreach {endpoint}?>
+            <?set-root-node {/devices}?>
+            <device>
+                <name>{device}</name>
+                <config>
+                    <?expand alu-l2vpn-vpls-macro?>
+                </config>
+            </device>
+        <?end?><!--foreach {endpoint}-->
+    </devices>
+</config-template>

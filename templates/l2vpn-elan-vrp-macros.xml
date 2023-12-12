@@ -13,7 +13,7 @@
         <statistic>
             <enable />
         </statistic>
-        <?if {enacpsulation='dot1q'}?>
+        <?if {encapsulation='dot1q'}?>
             <vlan-type>
                 <dot1q>{c-vlan-id}</dot1q>
             </vlan-type>            

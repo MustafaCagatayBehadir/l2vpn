@@ -8,7 +8,7 @@ SRC = $(wildcard yang/*.yang)
 DIRS = ../load-dir
 FXS = $(SRC:yang/%.yang=../load-dir/%.fxs)
 
-YANGPATH += ../../service-inventory/src/yang  ../../inventory/src/yang
+YANGPATH += ../../inventory/src/yang
 
 NCSCPATH   = $(YANGPATH:%=--yangpath %)
 YANGERPATH = $(YANGPATH:%=--path %)

@@ -50,6 +50,9 @@
     <?macro xr-l2vpn-vfi-neighbor-macro?>
         <?set DEVICE_NAME={device}?>
         <?set TUNNEL_DESTINATION_IP={/device[name=$DEVICE_NAME]/config/cisco-ios-xr:interface/Loopback[id='1']/ipv4/address/ip}?>
+        <?if {/device[name=$DEVICE_NAME]/platform/name='huawei-vrp'}?>
+            <?set TUNNEL_DESTINATION_IP={/device[name=$DEVICE_NAME]/config/vrp:interface/LoopBack[name='1']/ip/address/primary/ip/address}?>
+        <?end?><!--if {expression}-->
         <vfi>
             <name>{$SERVICE_NAME}</name>
             <neighbor>

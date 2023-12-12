@@ -1,0 +1,57 @@
+<config-template xmlns="http://tail-f.com/ns/config/1.0">
+
+    <!-- alu-l2vpn-sdp-macro -->
+    <?macro alu-l2vpn-service-sdp-macro?>
+        <sdp>
+            <sdp-id>22</sdp-id>
+            <far-end>10.255.255.22</far-end>
+            <delivery-type>mpls</delivery-type>
+            <path-mtu>1518</path-mtu>
+            <shutdown>false</shutdown>
+        </sdp>
+    <?endmacro?>
+    <!-- alu-l2vpn-sdp-macro -->
+
+    <!-- alu-l2vpn-vfi-neighbor-macro -->
+    <?macro alu-l2vpn-service-spoke-sdp-macro?>
+        <spoke-sdp>
+            <sdp-id>301</sdp-id>
+            <vc-id>{$PW_ID}</vc-id>
+            <shutdown>false</shutdown>
+            <description>Huawei_Dslam_RTP</description>
+        </spoke-sdp>
+    <?endmacro?>
+    <!-- alu-l2vpn-vfi-neighbor-macro -->
+
+    <!-- alu-l2vpn-bridge-domain-macro -->
+    <?macro alu-l2vpn-vpls-macro?>
+        <service xmlns="http://tail-f.com/ned/alu-sr">
+            <?foreach {../endpoint}?>
+                <?if {not(device=$DEVICE)}?>
+                    <?expand alu-l2vpn-service-sdp-macro?>
+                <?end?><!--if {not(device=$DEVICE)}-->
+            <?end?><!--foreach {../endpoint}-->                        
+            <vpls>
+                <service-id>{$SERVICE_ID}</service-id>
+                <allow-ip-int-bind />
+                <service-name>{$SERVICE_NAME}</service-name>
+                <stp>
+                    <shutdown>true</shutdown>
+                </stp>
+                <?foreach {../endpoint}?>
+                    <?if {not(device=$DEVICE)}?>
+                        <?expand alu-l2vpn-service-spoke-sdp-macro?>
+                    <?end?><!--if {not(device=$DEVICE)}-->
+                <?end?><!--foreach {../endpoint}-->
+                <sap>
+                    <sap-id>10/1/1:111.0</sap-id>
+                </sap>
+                <sap>
+                    <sap-id>8/1/2:111.0</sap-id>
+                </sap>
+                <shutdown>false</shutdown>
+            </vpls>
+        </service>
+    <?endmacro?>
+    <!-- alu-l2vpn-bridge-domain-macro -->
+</config-template>

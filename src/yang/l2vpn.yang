@@ -13,8 +13,8 @@ module l2vpn {
   import tailf-ncs {
     prefix ncs;
   }
-  import service-inventory {
-    prefix s-i;
+  import inventory {
+    prefix inv;
   }
 
   description
@@ -99,6 +99,11 @@ module l2vpn {
       mandatory true;
     }
 
+    leaf service-description {
+      tailf:info "Description for the service";
+      type l2vpn-string;
+    }
+
     leaf mtu {
       tailf:info "Interface/service MTU";
       type mtu-type;
@@ -135,17 +140,16 @@ module l2vpn {
 
         leaf if-size {
           tailf:info "Interface Size.Ex GigabitEthernet | TenGigabitEthernet | FortyGigE | HundredGigE | Port-channel";
-          type string;
-          tailf:non-strict-leafref {
-            path "/s-i:service-inventory-manager/s-i:devices/s-i:device[s-i:name=current()/../../device]/s-i:interface/s-i:if-size";
+          type leafref {
+            path "/inv:inventory-manager/inv:device[inv:name=current()/../../device]/inv:interface/inv:if-size";
           }
         }
 
         leaf if-number {
+          when "../if-size";
           tailf:info "Interface Size.Ex GigabitEthernet | TenGigabitEthernet | FortyGigE | HundredGigE | Port-channel";
-          type string;
-          tailf:non-strict-leafref {
-            path "/s-i:service-inventory-manager/s-i:devices/s-i:device[s-i:name=current()/../../device]/s-i:interface/s-i:if-number";
+          type leafref {
+            path "/inv:inventory-manager/inv:device[inv:name=current()/../../device]/inv:interface[inv:if-size=current()/../if-size]/inv:if-number";
           }
         }
 
