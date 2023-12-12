@@ -3,10 +3,10 @@
     <!-- alu-l2vpn-sdp-macro -->
     <?macro alu-l2vpn-service-sdp-macro?>
         <sdp>
-            <sdp-id>22</sdp-id>
-            <far-end>10.255.255.22</far-end>
+            <sdp-id>{sdp-id}</sdp-id>
+            <far-end>{address}</far-end>
             <delivery-type>mpls</delivery-type>
-            <path-mtu>1518</path-mtu>
+            <path-mtu>9000</path-mtu>
             <shutdown>false</shutdown>
         </sdp>
     <?endmacro?>
@@ -15,10 +15,10 @@
     <!-- alu-l2vpn-vfi-neighbor-macro -->
     <?macro alu-l2vpn-service-spoke-sdp-macro?>
         <spoke-sdp>
-            <sdp-id>301</sdp-id>
+            <sdp-id>{sdp-id}</sdp-id>
             <vc-id>{$PW_ID}</vc-id>
             <shutdown>false</shutdown>
-            <description>Huawei_Dslam_RTP</description>
+            <description>{$SERVICE_DESCRIPTION}</description>
         </spoke-sdp>
     <?endmacro?>
     <!-- alu-l2vpn-vfi-neighbor-macro -->
@@ -26,11 +26,9 @@
     <!-- alu-l2vpn-bridge-domain-macro -->
     <?macro alu-l2vpn-vpls-macro?>
         <service xmlns="http://tail-f.com/ned/alu-sr">
-            <?foreach {../endpoint}?>
-                <?if {not(device=$DEVICE)}?>
-                    <?expand alu-l2vpn-service-sdp-macro?>
-                <?end?><!--if {not(device=$DEVICE)}-->
-            <?end?><!--foreach {../endpoint}-->                        
+            <?foreach {remote-peer}?>
+                <?expand alu-l2vpn-service-sdp-macro?>
+            <?end?><!--foreach {remote-peer}-->                        
             <vpls>
                 <service-id>{$SERVICE_ID}</service-id>
                 <allow-ip-int-bind />
@@ -38,17 +36,24 @@
                 <stp>
                     <shutdown>true</shutdown>
                 </stp>
-                <?foreach {../endpoint}?>
-                    <?if {not(device=$DEVICE)}?>
-                        <?expand alu-l2vpn-service-spoke-sdp-macro?>
-                    <?end?><!--if {not(device=$DEVICE)}-->
+                <?foreach {remote-peer}?>
+                    <?expand alu-l2vpn-service-spoke-sdp-macro?>
                 <?end?><!--foreach {../endpoint}-->
-                <sap>
-                    <sap-id>10/1/1:111.0</sap-id>
-                </sap>
-                <sap>
-                    <sap-id>8/1/2:111.0</sap-id>
-                </sap>
+                <?foreach {pe-interface}?>
+                    <?if {encapsulation='dot1q'}?>
+                        <sap>
+                            <sap-id>{if-number}.{c-vlan-id}</sap-id>
+                        </sap>
+                    <?elif {encapsulation='dot1q-2tags' or encapsulation='dot1ad'}?><!--if {encapsulation='dot1q'}-->
+                        <sap>
+                            <sap-id>{if-number}.{s-vlan-id}:{c-vlan-id}</sap-id>
+                        </sap>
+                    <?else?><!--if {encapsulation='dot1q'}-->
+                        <sap>
+                            <sap-id>{if-number}</sap-id>
+                        </sap>
+                    <?end?><!--if {encapsulation='dot1q'}-->
+                <?end?><!--foreach {pe-interface}-->
                 <shutdown>false</shutdown>
             </vpls>
         </service>

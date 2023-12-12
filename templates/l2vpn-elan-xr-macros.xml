@@ -48,15 +48,10 @@
 
     <!-- xr-l2vpn-vfi-neighbor-macro -->
     <?macro xr-l2vpn-vfi-neighbor-macro?>
-        <?set DEVICE_NAME={device}?>
-        <?set TUNNEL_DESTINATION_IP={/device[name=$DEVICE_NAME]/config/cisco-ios-xr:interface/Loopback[id='1']/ipv4/address/ip}?>
-        <?if {/device[name=$DEVICE_NAME]/platform/name='huawei-vrp'}?>
-            <?set TUNNEL_DESTINATION_IP={/device[name=$DEVICE_NAME]/config/vrp:interface/LoopBack[name='1']/ip/address/primary/ip/address}?>
-        <?end?><!--if {expression}-->
         <vfi>
             <name>{$SERVICE_NAME}</name>
             <neighbor>
-                <address>{$TUNNEL_DESTINATION_IP}</address>
+                <address>{address}</address>
                 <pw-id>{$PW_ID}</pw-id>
                 <pw-class>{$SERVICE_NAME}</pw-class>
             </neighbor>
@@ -91,10 +86,8 @@
                                 <?end?><!--if {../../split-horizon='enable'}-->
                             </interface>                        
                         <?end?><!--foreach {pe-interface}-->
-                        <?foreach {../endpoint}?>
-                            <?if {not(device=$DEVICE)}?>
-                                <?expand xr-l2vpn-vfi-neighbor-macro?>
-                            <?end?><!--if {not(device=$DEVICE)}-->
+                        <?foreach {remote-peer}?>
+                            <?expand xr-l2vpn-vfi-neighbor-macro?>
                         <?end?><!--foreach {../endpoint}-->
                     </bridge-domain>
                 </group>

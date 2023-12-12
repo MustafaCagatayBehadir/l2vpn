@@ -5,6 +5,7 @@
             <device>
                 <name>{device}</name>
                 <config>
+                    <?expand vrp-mpls-ldp-remote-peer-macro?>
                     <?expand vrp-l2vpn-bridge-domain-macro?>
                 </config>
             </device>

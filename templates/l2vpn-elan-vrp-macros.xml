@@ -5,7 +5,7 @@
         <description when="{not(description)}">[{../../name}]::[ELAN]::[]::[NSO-CONFIG-ONLY]</description>
         <l2>
             <binding>
-              <vsi>{../../name}</vsi>
+                <vsi>{../../name}</vsi>
             </binding>
         </l2>
         <mtu>{../../mtu}</mtu>
@@ -16,10 +16,10 @@
         <?if {encapsulation='dot1q'}?>
             <vlan-type>
                 <dot1q>{c-vlan-id}</dot1q>
-            </vlan-type>            
+            </vlan-type>
         <?else?><!--if {enacpsulation='dot1q'}-->
             <encapsulation>
-                <qinq-termination/>
+                <qinq-termination />
             </encapsulation>
             <qinq>
                 <termination>
@@ -35,19 +35,29 @@
     <?endmacro?>
     <!-- vrp-subinterface-macro -->
 
-    <!-- vrp-l2vpn-vfi-neighbor-macro -->
+    <!-- vrp-l2vpn-remote-peer-macro -->
+    <?macro vrp-mpls-ldp-remote-peer-macro?>
+        <mpls xmlns="http://tail-f.com/ned/huawei-vrp">
+            <ldp-wrapper>
+                <ldp>
+                    <remote-peer>
+                        <name>{address}</name>
+                        <remote-ip>{address}</remote-ip>
+                    </remote-peer>
+                </ldp>
+            </ldp-wrapper>
+        </mpls>        
+    <?endmacro?>
+    <!-- vrp-l2vpn-remote-peer-macro -->
+
+    <!-- vrp-l2vpn-peer-macro -->
     <?macro vrp-l2vpn-neighbor-macro?>
-        <?set DEVICE_NAME={device}?>
-        <?set TUNNEL_DESTINATION_IP={/device[name=$DEVICE_NAME]/config/cisco-ios-xr:interface/Loopback[id='1']/ipv4/address/ip}?>
-        <?if {/device[name=$DEVICE_NAME]/platform/name='huawei-vrp'}?>
-            <?set TUNNEL_DESTINATION_IP={/device[name=$DEVICE_NAME]/config/vrp:interface/LoopBack[name='1']/ip/address/primary/ip/address}?>
-        <?end?><!--if {expression}-->
         <peer>
-            <address>{$TUNNEL_DESTINATION_IP}</address>
+            <address>{address}</address>
             <encapsulation>ethernet</encapsulation>
         </peer>
     <?endmacro?>
-    <!-- vrp-l2vpn-vfi-neighbor-macro -->
+    <!-- vrp-l2vpn-peer-macro -->
 
     <!-- vrp-l2vpn-bridge-domain-macro -->
     <?macro vrp-l2vpn-bridge-domain-macro?>
@@ -56,11 +66,9 @@
             <pwsignal>
                 <ldp>
                     <vsi-id>{$PW_ID}</vsi-id>
-                    <?foreach {../endpoint}?>
-                        <?if {not(device=$DEVICE)}?>
-                            <?expand vrp-l2vpn-neighbor-macro?>
-                        <?end?><!--if {not(device=$DEVICE)}-->
-                    <?end?><!--foreach {../endpoint}-->    
+                    <?foreach {remote-peer}?>
+                        <?expand vrp-l2vpn-neighbor-macro?>
+                    <?end?><!--foreach {remote-pe}-->
                 </ldp>
             </pwsignal>
             <mtu>{$MTU}</mtu>

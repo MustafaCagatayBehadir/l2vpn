@@ -9,8 +9,6 @@ from resource_manager.id_allocator import id_read, id_request
 INDENTATION = " "
 USER = "admin"
 
-LOOPBACK_ID = "1"
-
 PW_ID_POOL = "PW_ID_POOL"
 SERVICE_ID_POOL = "SERVICE_ID_POOL"
 SDP_ID_POOL = "{device}_SDP_ID_POOL"
@@ -61,9 +59,8 @@ def get_rm_pe_interface_subif_id_parameters(
     elan_kpath: str, endpoint_name: str, pe_interface: Type[ncs.maagic.ListElement]
 ) -> Tuple[str, str]:
     """Get pe-interface subif id pool and allocation names."""
-    subif_pool = SUB_INTF_ID_POOL.format(
-        device=endpoint_name, if_size=pe_interface.if_size, if_number=pe_interface.if_number
-    )
+    if_size, if_number = pe_interface.if_size, str(pe_interface.if_number).replace("/", "_")
+    subif_pool = SUB_INTF_ID_POOL.format(device=endpoint_name, if_size=if_size, if_number=if_number)
     subif_alloc_name = elan_kpath
     return subif_pool, subif_alloc_name
 
@@ -72,9 +69,8 @@ def get_rm_pe_interface_cvlan_id_parameters(
     elan_kpath: str, endpoint_name: str, pe_interface: Type[ncs.maagic.ListElement], c_vlan_id: int
 ) -> Tuple[str, str]:
     """Get pe-interface cvlan id pool and allocation names."""
-    cvlan_pool = CVLAN_ID_POOL.format(
-        device=endpoint_name, if_size=pe_interface.if_size, if_number=pe_interface.if_number
-    )
+    if_size, if_number = pe_interface.if_size, str(pe_interface.if_number).replace("/", "_")
+    cvlan_pool = CVLAN_ID_POOL.format(device=endpoint_name, if_size=if_size, if_number=if_number)
     cvlan_alloc_name = elan_kpath + "_" + str(c_vlan_id)
     return cvlan_pool, cvlan_alloc_name
 
@@ -83,23 +79,25 @@ def get_rm_pe_interface_svlan_id_parameters(
     endpoint_name: str, pe_interface: Type[ncs.maagic.ListElement]
 ) -> Tuple[str, str]:
     """Get pe-interface svlan id pool and allocation names."""
+    if_size, if_number = pe_interface.if_size, str(pe_interface.if_number).replace("/", "_")
     svlan_id = pe_interface.s_vlan_id
-    svlan_pool = SVLAN_ID_POOL.format(
-        device=endpoint_name, if_size=pe_interface.if_size, if_number=pe_interface.if_number
-    )
+    svlan_pool = SVLAN_ID_POOL.format(device=endpoint_name, if_size=if_size, if_number=if_number)
     svlan_alloc_name = f"INTERFACE_SVLAN_ID_{svlan_id}"
     return svlan_pool, svlan_alloc_name
 
 
-def get_device_loopback_ip_address(root: Type[ncs.maagic.Root],
-                                   device_name: str) -> str:
+def get_device_loopback_ip_address(root: Type[ncs.maagic.Root], device_name: str) -> str:
     """Get device mpls loopback ip address."""
     device = root.ncs__devices.device[device_name]
     if device.platform.name == "ios-xr":
-        return device.config.cisco_ios_xr__interface.Loopback[
-            LOOPBACK_ID].ipv4.address.ip
+        loopback_ip = device.config.cisco_ios_xr__interface.Loopback["0"].ipv4.address.ip
     elif device.platform.name == "huawei-vrp":
-        pass
+        loopback_ip = device.config.vrp__interface.LoopBack["0"].ip.address.primary.ip.address
+    else:
+        loopback_ip_prefix = device.config.alu__router["interface"].interface["system"].address
+        loopback_ip = loopback_ip_prefix.split("/")[0]
+    return loopback_ip
+
 
 def get_elan_id_info_list(elan: Type[ncs.maagic.ListElement], log: Type[ncs.log.Log]) -> List[IdInfo]:
     """Create id information list for requesting ids."""
@@ -109,7 +107,7 @@ def get_elan_id_info_list(elan: Type[ncs.maagic.ListElement], log: Type[ncs.log.
     pw_id_alloc_name = service_id_alloc_name = elan_kpath
     id_info: List[IdInfo] = []
 
-    devices = [endpoint.name for endpoint in elan.endpoint]
+    devices = [endpoint.device for endpoint in elan.endpoint]
 
     def add_id_info(info_type, pool, alloc_name):
         id_info.append(IdInfo(info_type, pool, elan_xpath, alloc_name, -1))
@@ -121,12 +119,13 @@ def get_elan_id_info_list(elan: Type[ncs.maagic.ListElement], log: Type[ncs.log.
             add_id_info("sdp_id", sdp_pool, sdp_alloc_name)
 
         for pe_interface in endpoint.pe_interface:
-            subif_pool, subif_alloc_name = get_rm_pe_interface_subif_id_parameters(
-                elan_kpath, endpoint_name, pe_interface
-            )
-            add_id_info("subif_id", subif_pool, subif_alloc_name)
+            if pe_interface.end_type == "serv-inst":
+                subif_pool, subif_alloc_name = get_rm_pe_interface_subif_id_parameters(
+                    elan_kpath, endpoint_name, pe_interface
+                )
+                add_id_info("subif_id", subif_pool, subif_alloc_name)
 
-            if pe_interface.encapsulation and pe_interface.encapsulation.string in ("dot1q",):
+            if pe_interface.encapsulation and pe_interface.encapsulation.string == "dot1q":
                 for c_vlan_id in pe_interface.c_vlan_id:
                     cvlan_pool, cvlan_alloc_name = get_rm_pe_interface_cvlan_id_parameters(
                         elan_kpath, endpoint_name, pe_interface, c_vlan_id
@@ -154,6 +153,8 @@ class ElanServiceCallback(Service):
         self.log.debug("Function ##" + INDENTATION + inspect.stack()[0][3])
         self.log.info("Service create(service=", getattr(service, "_path"), ")")
         self.allocate_ids(root, service)
+        self.create_operational_nodes(root, service)
+        self.apply_template(service)
 
     def allocate_ids(self, root: Type[ncs.maagic.Root], elan: Type[ncs.maagic.ListElement]):
         """Allocate ids for elan service."""
@@ -183,14 +184,23 @@ class ElanServiceCallback(Service):
         elan.service_id = read_allocated_id(root, SERVICE_ID_POOL, service_id_alloc_name, self.log)
         self.log.info(f"Elan {elan_name} operational service-id leaf is setted.")
 
-        devices = [endpoint.name for endpoint in elan.endpoint]
+        devices = [endpoint.device for endpoint in elan.endpoint]
 
         for endpoint in elan.endpoint:
             endpoint_name = endpoint.device
+
             for remote_device, sdp_pool, sdp_alloc_name in get_rm_endpoint_sdp_id_parameters(endpoint_name, devices):
                 remote_peer = endpoint.l2vpn__remote_peer.create(remote_device)
                 remote_peer.sdp_id = read_allocated_id(root, sdp_pool, sdp_alloc_name, self.log)
-                remote_peer.address = ""
+                remote_peer.address = get_device_loopback_ip_address(root, remote_device)
+                self.log.info(f"Endpoint {endpoint_name} operational remote-peer {remote_device} list is created.")
+
+            for pe_interface in endpoint.pe_interface:
+                if pe_interface.end_type == "serv-inst":
+                    subif_pool, subif_alloc_name = get_rm_pe_interface_subif_id_parameters(
+                        elan_kpath, endpoint_name, pe_interface
+                    )
+                    pe_interface.subif_id = read_allocated_id(root, subif_pool, subif_alloc_name, self.log)
 
     def apply_template(self, elan: Type[ncs.maagic.ListElement]) -> None:
         """Configure elan service on devices."""
@@ -198,15 +208,18 @@ class ElanServiceCallback(Service):
         template = ncs.template.Template(elan)
         tvars = ncs.template.Variables()
         tvars.add("SERVICE_NAME", elan.name)
+        tvars.add("SERVICE_DESCRIPTION", elan.service_description)
         tvars.add("PW_ID", elan.pw_id)
+        tvars.add("SERVICE_ID", elan.service_id)
         tvars.add("MTU", elan.mtu)
         self.log.info("Template l2vpn-elan-xr|vrp-interface is started to apply.")
         template.apply("l2vpn-elan-xr-interface", tvars)
         template.apply("l2vpn-elan-vrp-interface", tvars)
         self.log.info("Template l2vpn-elan-xr|vrp-interface is applied.")
-        self.log.info("Template l2vpn-elan-xr|vrp-bridge-domain is started to apply.")
+        self.log.info("Template l2vpn-elan-xr|vrp|alu-bridge-domain is started to apply.")
         template.apply("l2vpn-elan-xr-bridge-domain", tvars)
         template.apply("l2vpn-elan-vrp-bridge-domain", tvars)
+        template.apply("l2vpn-elan-alu-bridge-domain", tvars)
         self.log.info("Template l2vpn-elan-xr|vrp-bridge-domain is applied.")
 
 
