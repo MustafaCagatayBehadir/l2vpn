@@ -42,11 +42,11 @@
                 <?foreach {pe-interface}?>
                     <?if {encapsulation='dot1q'}?>
                         <sap>
-                            <sap-id>{if-number}.{c-vlan-id}</sap-id>
+                            <sap-id>{if-number}:{c-vlan-id}</sap-id>
                         </sap>
                     <?elif {encapsulation='dot1q-2tags' or encapsulation='dot1ad'}?><!--if {encapsulation='dot1q'}-->
                         <sap>
-                            <sap-id>{if-number}.{s-vlan-id}:{c-vlan-id}</sap-id>
+                            <sap-id>{if-number}:{s-vlan-id}.{c-vlan-id}</sap-id>
                         </sap>
                     <?else?><!--if {encapsulation='dot1q'}-->
                         <sap>
