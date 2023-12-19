@@ -94,7 +94,7 @@ def get_device_loopback_ip_address(root: Type[ncs.maagic.Root], device_name: str
     elif device.platform.name == "huawei-vrp":
         loopback_ip = device.config.vrp__interface.LoopBack["0"].ip.address.primary.ip.address
     else:
-        loopback_ip_prefix = device.config.alu__router["interface"].interface["system"].address
+        loopback_ip_prefix = device.config.alu__router["Base"].interface["system"].address
         loopback_ip = loopback_ip_prefix.split("/")[0]
     return loopback_ip
 
